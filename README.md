@@ -13,19 +13,19 @@ This Flask application provides a backend service for chatting with PDF files an
 ## Endpoints
 
 1. **Delete Index**
-   - `DELETE /api/index`
+   - `DELETE /api/flashcard/index`
    - Deletes a specified index from the Pinecone vector database.
 
 2. **Upload PDF**
-   - `POST /api/upload`
+   - `POST /api/flashcard/upload`
    - Uploads a PDF file, processes its content, and stores embeddings in Pinecone.
 
 3. **Generate Flashcards**
-   - `GET /api/flashcards`
+   - `GET /api/flashcard/create`
    - Generates a random number of flashcards based on the uploaded PDF content.
 
 4. **Answer Query**
-   - `POST /api/query`
+   - `GET /api/flashcard/query`
    - Answers user queries using the RAG model based on the uploaded PDF content.
 
 ## Technologies Used
