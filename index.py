@@ -18,7 +18,7 @@ def return_home():
     }), 200
 
 #API Endpoint 1
-@app.route("/api/flashcard", methods=['DELETE'])
+@app.route("/api/flashcard/index", methods=['DELETE'])
 def delete_index():
     index_name = request.args.get('index', '')
     
@@ -35,7 +35,7 @@ def delete_index():
         }), 500
 
 #API Endpoint 2
-@app.route("/api/flashcard", methods=['GET'])
+@app.route("/api/flashcard/create", methods=['GET'])
 def get_flashcards():
     # Get the items from the query parameter
     flashcount = request.args.get('flash_count', '')
