@@ -1,0 +1,24 @@
+# Below are the commands:
+
+create .env file create variable GROQ_API_KEY(groq api key)
+
+#creat virtual environment: this is for mac
+python -m venv venv     
+source venv/bin/activate 
+
+#install
+all the package in requirement.txt
+# run - pip install requirements.txt
+
+#to run sever
+python server.py
+
+# to create requirements.txt in the current env with all the modules to install
+use command : pip freeze > requirements.txt
+
+
+----------------------------------------
+# To expose url using ngrok
+- install npm package - npm install firebase, npm install -g ngrok
+- To start ngrok : ngrok http 3000 (to make secure https connection)
+- User need to create account on ngrok dashboard and get authtoken(https://dashboard.ngrok.com/get-started/setup)
