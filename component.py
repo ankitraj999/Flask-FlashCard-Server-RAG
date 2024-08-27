@@ -1,6 +1,7 @@
 from flask import jsonify,request
 from PyPDF2 import PdfReader
 import re
+import time
 import nltk
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
@@ -13,6 +14,7 @@ from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from groq_llm import generate_question
 from groq_llm import generate_answer
+from groq_llm import chat_get_answer_to_query
 
 #API Endpoint 1
 def delete_index_pinecone(index_name):
@@ -30,9 +32,9 @@ def delete_index_pinecone(index_name):
     
     
 
-def create_pinecone_connection():
+def create_pinecone_connection(index_name):
     pinecone = Pinecone(api_key="f9ccd300-0b10-436b-8821-cbe8103ee591")
-    index_name = "flashcard-embeddings"
+    index_name = index_name
     # Create Pinecone index if it doesn't exist
     if len(pinecone.list_indexes()) == 0:
         pinecone.create_index(
@@ -139,7 +141,8 @@ def store_in_pinecone(indexName:str,pdf_path: str):
     text = extract_text_from_pdf(pdf_path)
     clean_text_content = clean_text(text)
     chunks = semantic_chunking(clean_text_content)
-    create_pinecone_connection()
+    
+    create_pinecone_connection(indexName)
     embeddings = generate_embeddings(chunks)
     store_embeddings_in_pinecone(indexName,chunks, embeddings)
 
@@ -234,3 +237,48 @@ def generate_flashcards(index_name:str,num_cards: int) -> List[Tuple[str, str]]:
         flashcards.append((question, answer))
 
     return flashcards
+
+#manage conversation history
+def manage_conversation_history(query: str, response: str, history: List[dict], max_history: int = 5) -> List[dict]:
+    history.append({"query": query, "response": response})
+    if len(history) > max_history:
+        history = history[-max_history:]
+    return history
+
+#Clean up session
+def cleanup_old_sessions(conversation_histories,last_access_times,SESSION_TIMEOUT):
+    current_time = time.time()
+    expired_sessions = [
+        session_id for session_id, last_access in last_access_times.items()
+        if current_time - last_access > SESSION_TIMEOUT
+    ]
+    for session_id in expired_sessions:
+        del conversation_histories[session_id]
+        del last_access_times[session_id]
+
+def chat_get_full_answer_to_query(query:str,indexName: str,formatted_chat_history,k: int=5):
+    load_dotenv()
+    api_key = os.getenv('GROQ_API_KEY')
+    pinecone = Pinecone(api_key="f9ccd300-0b10-436b-8821-cbe8103ee591")
+    index = pinecone.Index(indexName)
+
+    # Initialize the embedding model
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+    # Create a query vector
+    query_text = query
+
+    query_vector = model.encode([query_text])[0].tolist()
+
+    # Query Pinecone 
+    results = index.query(
+      vector=query_vector,
+      top_k=k,
+      include_metadata=True
+    )
+    similar_chunks=[match['metadata']['text'] for match in results['matches']]
+    context = " ".join([chunk for chunk in similar_chunks])
+    # print(context)
+    answer = chat_get_answer_to_query(query_text, context,formatted_chat_history,api_key)
+    return answer
+
